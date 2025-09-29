@@ -49,8 +49,6 @@ Make sure LM Studio is configured to serve an OpenAI-compatible API at:
 http://localhost:1234/v1/chat/completions
 ```
 
-The request format sent is:
-
 This assistant expects a local language model server running at:
 
 ```
