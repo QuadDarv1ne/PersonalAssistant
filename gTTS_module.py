@@ -19,24 +19,25 @@ def text_to_speech(text: str, lang: str = 'en'):
     global _playing
 
     try:
-        # Генерировать аудио в памяти
+        # Генерировать аудио и сохранить в файл
         tts = gTTS(text=text, lang=lang)
-        fp = io.BytesIO()
-        tts.write_to_fp(fp)
-        fp.seek(0)
+        filename = 'temp_audio.mp3'
+        tts.save(filename)
 
-        # Инициализировать Pygame и загрузить аудио из памяти
-        pygame.mixer.init()
-        pygame.mixer.music.load(fp)
-        pygame.mixer.music.play()
-
+        # Воспроизвести файл
         _playing = True
+        playsound(filename, block=False)
 
-        # Ждать завершения воспроизведения или остановки
-        while pygame.mixer.music.get_busy() and _playing:
-            continue
+        # Ждать завершения или остановки
+        while _playing:
+            if keyboard.is_pressed('esc'):
+                stop_sound()
+                break
+            Thread(target=lambda: None, daemon=True).join(0.1)  # Небольшая задержка
 
-        pygame.mixer.quit()
+        # Удалить файл после воспроизведения
+        if os.path.exists(filename):
+            os.remove(filename)
 
     except Exception as e:
         print(f"Ошибка во время синтеза речи: {e}")
