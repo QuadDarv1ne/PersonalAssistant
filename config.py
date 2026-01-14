@@ -1,21 +1,24 @@
 import os
 
-# Audio settings
+# Настройки аудио
 SAMPLE_RATE = 16000
 CHANNELS = 1
 DTYPE = 'int16'
 
-# VAD settings
-SEGMENT_DURATION = 0.02  # 20 ms for VAD
+# Настройки VAD
+SEGMENT_DURATION = 0.02  # 20 мс для VAD
 SEGMENT_SAMPLES = int(SAMPLE_RATE * SEGMENT_DURATION)
-MIN_SPEECH_CHUNKS = 10     # minimum consecutive voice segments
-SILENCE_TIMEOUT = 1.5      # seconds to wait before new line
+SILENCE_TIMEOUT = 1.5      # секунды ожидания перед новой строкой
 
-# Whisper model
+# Модель Whisper
 WHISPER_MODEL = os.getenv('WHISPER_MODEL', 'medium')
 
-# LLM server
+# Сервер LLM
 LLM_URL = os.getenv('LLM_URL', 'http://localhost:1234/v1/chat/completions')
 
-# Theme
+# Тема
 DEFAULT_THEME = 'light'
+
+# Язык для Whisper и TTS
+LANGUAGE = os.getenv('LANGUAGE', 'en')  # 'en', 'ru', etc.
+TTS_LANGUAGE = os.getenv('TTS_LANGUAGE', 'en')

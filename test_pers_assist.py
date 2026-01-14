@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 import sys
 import os
 
-# Add the project directory to the path
+# Добавить директорию проекта в путь
 sys.path.insert(0, os.path.dirname(__file__))
 
 import pers_assist
@@ -23,11 +23,11 @@ class TestPersonalAssistant(unittest.TestCase):
     def test_generate_response_timeout(self):
         with patch('pers_assist.requests.post', side_effect=pers_assist.requests.RequestException("Timeout")):
             result = pers_assist.generate_response("Hello")
-            self.assertIn("Sorry", result)
+            self.assertIn("Извините", result)
 
     def test_is_speech(self):
-        # Test with valid frame
-        frame = b'\x00\x01' * 160  # 320 bytes for 20ms at 16kHz
+        # Тест с валидным фреймом
+        frame = b'\x00\x01' * 160  # 320 байт для 20мс при 16кГц
         result = pers_assist.is_speech(frame)
         self.assertIsInstance(result, bool)
 

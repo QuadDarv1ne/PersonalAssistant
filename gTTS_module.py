@@ -1,99 +1,99 @@
 import io, os, contextlib
 from gtts import gTTS
-# Suppress output
+# Подавить вывод
 with open(os.devnull, 'w') as devnull, contextlib.redirect_stdout(devnull), contextlib.redirect_stderr(devnull):
     import pygame
 from threading import Thread
-import keyboard  # For key tracking
+import keyboard  # Для отслеживания клавиш
 
 
-# Global variable to stop playback
+# Глобальная переменная для остановки воспроизведения
 _playing = False
 
 
 def text_to_speech(text: str, lang: str = 'en'):
     """
-    Converts text to speech and plays it.
-    Can be stopped by calling stop_sound().
+    Преобразует текст в речь и воспроизводит его.
+    Можно остановить, вызвав stop_sound().
     """
     global _playing
 
     try:
-        # Generate audio in memory
+        # Генерировать аудио в памяти
         tts = gTTS(text=text, lang=lang)
         fp = io.BytesIO()
         tts.write_to_fp(fp)
         fp.seek(0)
 
-        # Initialize Pygame and load the audio from memory
+        # Инициализировать Pygame и загрузить аудио из памяти
         pygame.mixer.init()
         pygame.mixer.music.load(fp)
         pygame.mixer.music.play()
 
         _playing = True
 
-        # Wait for playback to finish or to be stopped
+        # Ждать завершения воспроизведения или остановки
         while pygame.mixer.music.get_busy() and _playing:
             continue
 
         pygame.mixer.quit()
 
     except Exception as e:
-        print(f"Error during speech synthesis: {e}")
+        print(f"Ошибка во время синтеза речи: {e}")
     finally:
         _playing = False
 
 
 def text_to_speech_withEsc(text: str, lang: str = 'en'):
     """
-    Converts text to speech and plays it.
-    Playback can be stopped by pressing Esc.
+    Преобразует текст в речь и воспроизводит его.
+    Воспроизведение можно остановить, нажав Esc.
     """
     try:
-        # Generate audio in memory
+        # Генерировать аудио в памяти
         tts = gTTS(text=text, lang=lang)
         fp = io.BytesIO()
         tts.write_to_fp(fp)
         fp.seek(0)
 
-        # Initialize Pygame and load the audio from memory
+        # Инициализировать Pygame и загрузить аудио из памяти
         pygame.mixer.init()
         pygame.mixer.music.load(fp)
         pygame.mixer.music.play()
 
-        # Play until finished or Esc is pressed
+        # Воспроизводить до завершения или нажатия Esc
         while pygame.mixer.music.get_busy():
             if keyboard.is_pressed('esc'):
                 pygame.mixer.music.stop()
-                print("Playback stopped (Esc)")
+                print("Воспроизведение остановлено (Esc)")
                 break
 
         pygame.mixer.quit()
 
     except Exception as e:
-        print(f"Error during speech synthesis: {e}")
+        print(f"Ошибка во время синтеза речи: {e}")
     finally:
         pass
 
 
 def speak_async(text: str, lang: str = 'ru'):
-    """Plays speech asynchronously in a separate thread"""
+    """Воспроизводит речь асинхронно в отдельном потоке"""
     Thread(target=text_to_speech, args=(text, lang), daemon=True).start()
 
 
 def stop_sound():
-    """Stops current playback"""
+    """Останавливает текущее воспроизведение"""
     global _playing
     if _playing:
         pygame.mixer.music.stop()
         _playing = False
-        print("Playback stopped")
+        print("Воспроизведение остановлено")
 
 
 def listen_for_stop_key():
-    """Starts listening for the Esc key to stop playback"""
+    """Начинает прослушивание клавиши Esc для остановки воспроизведения"""
     def key_listener():
-        keyboard.wait('esc')  # Waits for Esc key press
+        keyboard.wait('esc')  # Ждёт нажатия Esc
         stop_sound()
 
     Thread(target=key_listener, daemon=True).start()

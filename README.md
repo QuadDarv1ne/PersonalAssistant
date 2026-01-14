@@ -12,6 +12,11 @@ This is a real-time voice assistant built in Python using [OpenAI Whisper](https
 - Text-to-speech response using `gTTS_module`
 - Terminal theming (light/dark)
 - Multithreaded design for responsive interaction
+- **Conversation history** with context awareness
+- **Web interface** for monitoring conversations
+- **Multi-language support** for Whisper and TTS
+- **Comprehensive logging** system
+- **Configurable settings** via environment variables
 
 ## 📦 Dependencies
 
@@ -24,7 +29,7 @@ pip install -r requirements.txt
 Or manually:
 
 ```bash
-pip install numpy sounddevice keyboard openai-whisper torch webrtcvad requests colorama gtts pygame
+pip install numpy sounddevice keyboard openai-whisper torch webrtcvad requests colorama gtts pygame flask
 ```
 
 > You also need a working `gTTS_module.py` in the same directory with a function:  
@@ -42,6 +47,8 @@ pip install numpy sounddevice keyboard openai-whisper torch webrtcvad requests c
 3. **Speak** into your microphone. When you stop talking, the assistant transcribes your speech and responds.
 
 4. The assistant **prints the response** in the terminal and **speaks it aloud**.
+
+5. **Web interface** is available at `http://localhost:5000` for viewing conversation history.
 
 ## 📡 LLM Chatbot Backend
 
@@ -92,8 +99,15 @@ THEME = THEMES["light"]
 ├── pers_assist.py         # Main application
 ├── gTTS_module.py         # Text-to-speech utility
 ├── config.py              # Configuration settings
-├── requirements.txt       # Python dependencies
+├── logger.py              # Logging system
+├── conversation_history.py # Conversation history management
+├── web_interface.py       # Web interface with Flask
 ├── test_pers_assist.py    # Unit tests
+├── requirements.txt       # Python dependencies
+├── conversation_history.json # Saved conversation history
+├── assistant.log          # Log file
+├── templates/
+│   └── index.html         # Web interface template
 ├── README.md              # This file
 └── LICENSE                # License file
 ```
@@ -106,10 +120,16 @@ Settings can be customized in `config.py`:
 - `WHISPER_MODEL`: Whisper model size (default: "medium")
 - `LLM_URL`: Local LLM server URL
 - `DEFAULT_THEME`: Terminal theme ("light" or "dark")
+- `LANGUAGE`: Language for Whisper transcription (default: "en")
+- `TTS_LANGUAGE`: Language for text-to-speech (default: "en")
 
 You can also set environment variables:
 - `WHISPER_MODEL`: Override Whisper model
 - `LLM_URL`: Override LLM server URL
+- `LANGUAGE`: Override transcription language
+- `TTS_LANGUAGE`: Override TTS language
+- `LOG_LEVEL`: Set logging level (DEBUG, INFO, WARNING, ERROR)
+- `LOG_FILE`: Set log file path
 ## 🧪 Testing
 
 Run unit tests:

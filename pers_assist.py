@@ -12,12 +12,15 @@ import re
 import gTTS_module
 from typing import List, Dict, Any, Optional
 import config
+import logger
+import conversation_history
+import web_interface
 
 
-# Initialize colorama for terminal colors
+# Инициализация colorama для цветного вывода в терминал
 init(autoreset=True)
 
-# === Color themes ===
+# === Цветовые темы ===
 THEMES: Dict[str, Dict[str, str]] = {
     "light": {  
         "user": Fore.BLUE,
@@ -38,26 +41,25 @@ THEMES: Dict[str, Dict[str, str]] = {
 THEME: Dict[str, str] = THEMES[config.DEFAULT_THEME]
 # print(f"\n✅ {THEME['prompt']} theme is active\n")
 
-# --- Settings ---
+# --- Настройки ---
 SAMPLE_RATE = config.SAMPLE_RATE
 CHANNELS = config.CHANNELS
 DTYPE = np.dtype(config.DTYPE)
 
-SEGMENT_DURATION = config.SEGMENT_DURATION  # 20 ms for VAD
+SEGMENT_DURATION = config.SEGMENT_DURATION  # 20 мс для VAD
 SEGMENT_SAMPLES = config.SEGMENT_SAMPLES
 
-MIN_SPEECH_CHUNKS = config.MIN_SPEECH_CHUNKS     # minimum consecutive voice segments
-SILENCE_TIMEOUT = config.SILENCE_TIMEOUT      # seconds to wait before new line
+SILENCE_TIMEOUT = config.SILENCE_TIMEOUT      # секунды ожидания перед новой строкой
 
 # ['tiny.en', 'tiny', 'base.en', 'base', 'small.en', 'small', 'medium.en', 'medium', 'large-v1', 'large-v2', 'large-v3', 'large', 'large-v3-turbo', 'turbo']
-# --- Whisper model initialization with CUDA support ---
+# --- Инициализация модели Whisper с поддержкой CUDA ---
 device = "cuda" if torch.cuda.is_available() else "cpu"
 # print(f"[Device used]: {device.upper()}")
-model = whisper.load_model(config.WHISPER_MODEL).to(device)  # You can also specify device: whisper.load_model("small", device="cpu")
+model = whisper.load_model(config.WHISPER_MODEL).to(device)  # Можно также указать устройство: whisper.load_model("small", device="cpu")
 
-# --- VAD initialization ---
+# --- Инициализация VAD ---
 vad = webrtcvad.Vad()
-vad.set_mode(3)  # sensitivity 0 - high, 3 - low
+vad.set_mode(3)  # чувствительность 0 - высокая, 3 - низкая
 
 def is_speech(frame_bytes: bytes) -> bool:
     try:
@@ -65,23 +67,23 @@ def is_speech(frame_bytes: bytes) -> bool:
     except:
         return False
 
-# --- Global variables ---
+# --- Глобальные переменные ---
 recording = False
 audio_buffer = []
 buffer_index = 0
 lock = threading.Lock()
 last_speech_time = None
 
-# --- Recording callback ---
+# --- Callback для записи ---
 def callback(indata: np.ndarray, frames: int, time: Any, status: Any) -> None:
     if recording:
         with lock:
             audio_buffer.extend(indata.copy().flatten())
 
-# --- Audio recording control ---
+# --- Управление записью аудио ---
 def record_audio():
     global recording
-    print("Press Space to start recording...")
+    logger.log_with_color('INFO', "Нажмите Пробел для начала записи...", logger.Colors.CYAN)
     with sd.InputStream(samplerate=SAMPLE_RATE, channels=CHANNELS, dtype=DTYPE, callback=callback):
         while True:
             if keyboard.is_pressed('space'):
@@ -96,29 +98,33 @@ def toggle_recording():
 
     recording = not recording
     if recording:
-        print("\n[Recording started...]")
+        logger.log_with_color('INFO', "[Запись начата...]", logger.Colors.GREEN)
         audio_buffer.clear()
         buffer_index = 0
 
-        # Reset VAD state
+        # Сброс состояния VAD
         speech_segment = []
         speech_started = False
         new_line_pending = False
         current_pause = 0.0
-        last_speech_time = time.time()  # ← update start time
+        last_speech_time = time.time()  # ← обновить время начала
     else:
-        print("[Recording stopped.]")
+        logger.log_with_color('INFO', "[Запись остановлена.]", logger.Colors.YELLOW)
 
 def generate_response(text: str) -> str:
     try:
+        # Получить контекст из истории
+        context = conversation_history.history.get_recent_context(3)
+        full_prompt = f"{context}\n\nПользователь: {text}\nАссистент:" if context else text
+
         data = {
             "messages": [
-                {"role": "user", "content": text}
+                {"role": "user", "content": full_prompt}
             ],
-            # "temperature": 0.0,        # minimal randomness
-            # "max_tokens": 10,          # minimal token count
-            # "stream": False,           # disable streaming
-            # "stop": ["\n"]             # stop after first line
+            # "temperature": 0.0,        # минимальная случайность
+            # "max_tokens": 10,          # минимальное количество токенов
+            # "stream": False,           # отключить потоковую передачу
+            # "stop": ["\n"]             # остановка после первой строки
         }
 
         response = requests.post(
@@ -128,19 +134,23 @@ def generate_response(text: str) -> str:
         )
         response.raise_for_status()
         assist_reply = response.json()['choices'][0]['message']['content']
-        # Remove tags and content between them
+        # Удалить теги и содержимое между ними
         # cleaned_text = re.sub(r'\<think\>.*?<\</think\>', '', assist_reply, flags=re.DOTALL)
         # print("Assistant response:", assist_reply)
+
+        # Сохранить в историю
+        conversation_history.history.add_entry(text, assist_reply)
+
         return assist_reply
     except requests.RequestException as e:
-        print(f"[Error]: Failed to get response from LLM server: {e}")
-        return "Sorry, I couldn't generate a response right now."
+        logger.log_with_color('ERROR', f"Не удалось получить ответ от сервера LLM: {e}")
+        return "Извините, я не смог сгенерировать ответ прямо сейчас."
     except (KeyError, IndexError) as e:
-        print(f"[Error]: Unexpected response format: {e}")
-        return "Sorry, I received an unexpected response."
+        logger.log_with_color('ERROR', f"Неожиданный формат ответа: {e}")
+        return "Извините, я получил неожиданный ответ."
 
-# === Loading animation ===
-def loading_animation(duration: float = 1, text: str = "Thinking") -> None:
+# === Анимация загрузки ===
+def loading_animation(duration: float = 1, text: str = "Думаю") -> None:
     symbols = ['⣷', '⣯', '⣟', '⡿', '⢿', '⣻', '⣽', '⣾']
     end_time = time.time() + duration
     idx = 0
@@ -148,7 +158,7 @@ def loading_animation(duration: float = 1, text: str = "Thinking") -> None:
         print(f"\r{THEME['thinking']}[{symbols[idx % len(symbols)]}] {text}{Style.RESET_ALL}", end="")
         idx += 1
         time.sleep(0.1)
-    print(" " * (len(text) + 6), end="\r")  # Clear line
+    print(" " * (len(text) + 6), end="\r")  # Очистить строку
 
 def process_stream():
     global last_speech_time, buffer_index
@@ -177,47 +187,51 @@ def process_stream():
                     speech_segment.extend(segment)
                     speech_started = True
                     new_line_pending = False
-                    last_speech_time = time.time()  # ← update speech time
+                    last_speech_time = time.time()  # ← обновить время речи
                 elif speech_started:
                     current_pause = time.time() - last_speech_time
 
                     if current_pause > SILENCE_TIMEOUT:
                         if speech_segment:
-                            # Transcribe and output
+                            # Транскрибировать и вывести
                             audio_float = np.array(speech_segment, dtype=np.float32) / 32768.0
-                            result = model.transcribe(audio_float, language="en", verbose=None)
+                            result = model.transcribe(audio_float, language=config.LANGUAGE, verbose=None)
 
                             text = result["text"].strip()
-                            if text.startswith("Subtitle Editor"):  # Whisper bug: reacts on noise
+                            if text.startswith("Subtitle Editor"):  # Ошибка Whisper: реагирует на шум
                                 text = ""
                                 continue
                             question_text += " " + text
                             if text:
-                                print(f"{THEME['user']}You: {Style.RESET_ALL}{text}", end=" ", flush=True)
+                                print(f"{THEME['user']}Вы: {Style.RESET_ALL}{text}", end=" ", flush=True)
 
                             speech_segment = []
 
-                        print()  # New line
+                        print()  # Новая строка
                         speech_segment = []
                         speech_started = False
                         new_line_pending = False
-                        # Generate response
-                        loading_animation(text="Generating response...")
+                        # Генерировать ответ
+                        loading_animation(text="Генерация ответа...")
                         response = generate_response(question_text)
-                        print(f"{THEME['assistant']}Assistant: {response}{Style.RESET_ALL}")
+                        print(f"{THEME['assistant']}Ассистент: {response}{Style.RESET_ALL}")
                         question_text = ""
                         recording = False
-                        gTTS_module.text_to_speech_withEsc(response)
+                        gTTS_module.text_to_speech_withEsc(response, lang=config.TTS_LANGUAGE)
                         recording = True
 
             except Exception as e:
-                print(f"[Error]: {e}")
+                logger.log_with_color('ERROR', f"Ошибка в обработке потока: {e}")
 
         time.sleep(0.05)
 
-# --- Entry point ---
+# --- Точка входа ---
 if __name__ == "__main__":
-    print("[Voice assistant application started.]")
+    logger.log_with_color('INFO', "[Приложение голосового ассистента запущено.]", logger.Colors.GREEN)
+
+    # Запустить веб-интерфейс
+    web_interface.start_web_interface(port=5000)
+
     threading.Thread(target=record_audio, daemon=True).start()
     threading.Thread(target=process_stream, daemon=True).start()
 
@@ -225,4 +239,4 @@ if __name__ == "__main__":
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("\nExiting.")
+        logger.log_with_color('INFO', "Выход.", logger.Colors.YELLOW)
