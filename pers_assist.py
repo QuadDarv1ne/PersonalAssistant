@@ -10,13 +10,14 @@ import requests
 from colorama import Fore, Style, init
 import re
 import gTTS_module
+from typing import List, Dict, Any, Optional
 
 
 # Initialize colorama for terminal colors
 init(autoreset=True)
 
 # === Color themes ===
-THEMES = {
+THEMES: Dict[str, Dict[str, str]] = {
     "light": {  
         "user": Fore.BLUE,
         "assistant": Fore.LIGHTBLACK_EX,
@@ -33,7 +34,7 @@ THEMES = {
     }
 }
 
-THEME = THEMES["light"]
+THEME: Dict[str, str] = THEMES["light"]
 # print(f"\n✅ {THEME['prompt']} theme is active\n")
 
 # --- Settings ---
@@ -57,7 +58,7 @@ model = whisper.load_model("medium").to(device)  # You can also specify device: 
 vad = webrtcvad.Vad()
 vad.set_mode(3)  # sensitivity 0 - high, 3 - low
 
-def is_speech(frame_bytes):
+def is_speech(frame_bytes: bytes) -> bool:
     try:
         return vad.is_speech(frame_bytes, SAMPLE_RATE)
     except:
@@ -71,7 +72,7 @@ lock = threading.Lock()
 last_speech_time = None
 
 # --- Recording callback ---
-def callback(indata, frames, time, status):
+def callback(indata: np.ndarray, frames: int, time: Any, status: Any) -> None:
     if recording:
         with lock:
             audio_buffer.extend(indata.copy().flatten())
@@ -107,29 +108,38 @@ def toggle_recording():
     else:
         print("[Recording stopped.]")
 
-def generate_response(text):
-    data = {
-        "messages": [
-            {"role": "user", "content": text}
-        ],
-        # "temperature": 0.0,        # minimal randomness
-        # "max_tokens": 10,          # minimal token count
-        # "stream": False,           # disable streaming
-        # "stop": ["\n"]             # stop after first line
-    }
+def generate_response(text: str) -> str:
+    try:
+        data = {
+            "messages": [
+                {"role": "user", "content": text}
+            ],
+            # "temperature": 0.0,        # minimal randomness
+            # "max_tokens": 10,          # minimal token count
+            # "stream": False,           # disable streaming
+            # "stop": ["\n"]             # stop after first line
+        }
 
-    response = requests.post(
-        "http://localhost:1234/v1/chat/completions",
-        json=data
-    )
-    assist_reply = response.json()['choices'][0]['message']['content']
-    # Remove tags and content between them
-    # cleaned_text = re.sub(r'\<think\>.*?<\</think\>', '', assist_reply, flags=re.DOTALL)
-    # print("Assistant response:", assist_reply)
-    return assist_reply
+        response = requests.post(
+            "http://localhost:1234/v1/chat/completions",
+            json=data,
+            timeout=10
+        )
+        response.raise_for_status()
+        assist_reply = response.json()['choices'][0]['message']['content']
+        # Remove tags and content between them
+        # cleaned_text = re.sub(r'\<think\>.*?<\</think\>', '', assist_reply, flags=re.DOTALL)
+        # print("Assistant response:", assist_reply)
+        return assist_reply
+    except requests.RequestException as e:
+        print(f"[Error]: Failed to get response from LLM server: {e}")
+        return "Sorry, I couldn't generate a response right now."
+    except (KeyError, IndexError) as e:
+        print(f"[Error]: Unexpected response format: {e}")
+        return "Sorry, I received an unexpected response."
 
 # === Loading animation ===
-def loading_animation(duration=1, text="Thinking"):
+def loading_animation(duration: float = 1, text: str = "Thinking") -> None:
     symbols = ['⣷', '⣯', '⣟', '⡿', '⢿', '⣻', '⣽', '⣾']
     end_time = time.time() + duration
     idx = 0
