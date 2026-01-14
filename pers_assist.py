@@ -35,25 +35,25 @@ THEMES: Dict[str, Dict[str, str]] = {
     }
 }
 
-THEME: Dict[str, str] = THEMES["light"]
+THEME: Dict[str, str] = THEMES[config.DEFAULT_THEME]
 # print(f"\n✅ {THEME['prompt']} theme is active\n")
 
 # --- Settings ---
-SAMPLE_RATE = 16000
-CHANNELS = 1
-DTYPE = np.int16
+SAMPLE_RATE = config.SAMPLE_RATE
+CHANNELS = config.CHANNELS
+DTYPE = np.dtype(config.DTYPE)
 
-SEGMENT_DURATION = 0.02  # 20 ms for VAD
-SEGMENT_SAMPLES = int(SAMPLE_RATE * SEGMENT_DURATION)
+SEGMENT_DURATION = config.SEGMENT_DURATION  # 20 ms for VAD
+SEGMENT_SAMPLES = config.SEGMENT_SAMPLES
 
-MIN_SPEECH_CHUNKS = 10     # minimum consecutive voice segments
-SILENCE_TIMEOUT = 1.5      # seconds to wait before new line
+MIN_SPEECH_CHUNKS = config.MIN_SPEECH_CHUNKS     # minimum consecutive voice segments
+SILENCE_TIMEOUT = config.SILENCE_TIMEOUT      # seconds to wait before new line
 
 # ['tiny.en', 'tiny', 'base.en', 'base', 'small.en', 'small', 'medium.en', 'medium', 'large-v1', 'large-v2', 'large-v3', 'large', 'large-v3-turbo', 'turbo']
 # --- Whisper model initialization with CUDA support ---
 device = "cuda" if torch.cuda.is_available() else "cpu"
 # print(f"[Device used]: {device.upper()}")
-model = whisper.load_model("medium").to(device)  # You can also specify device: whisper.load_model("small", device="cpu")
+model = whisper.load_model(config.WHISPER_MODEL).to(device)  # You can also specify device: whisper.load_model("small", device="cpu")
 
 # --- VAD initialization ---
 vad = webrtcvad.Vad()
@@ -122,7 +122,7 @@ def generate_response(text: str) -> str:
         }
 
         response = requests.post(
-            "http://localhost:1234/v1/chat/completions",
+            config.LLM_URL,
             json=data,
             timeout=10
         )

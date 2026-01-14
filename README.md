@@ -18,7 +18,13 @@ This is a real-time voice assistant built in Python using [OpenAI Whisper](https
 Install required libraries via pip:
 
 ```bash
-pip install numpy sounddevice keyboard openai-whisper torch webrtcvad requests colorama
+pip install -r requirements.txt
+```
+
+Or manually:
+
+```bash
+pip install numpy sounddevice keyboard openai-whisper torch webrtcvad requests colorama gtts pygame
 ```
 
 > You also need a working `gTTS_module.py` in the same directory with a function:  
@@ -85,13 +91,32 @@ THEME = THEMES["light"]
 ```
 ├── pers_assist.py         # Main application
 ├── gTTS_module.py         # Text-to-speech utility
-└── README.md              # This file
+├── config.py              # Configuration settings
+├── requirements.txt       # Python dependencies
+├── test_pers_assist.py    # Unit tests
+├── README.md              # This file
+└── LICENSE                # License file
 ```
-## 📝 Notes
 
-- Pressing the spacebar toggles recording on/off.
-- The assistant detects silence to trigger transcription and response generation.
-- VAD settings are tuned for responsiveness and low false positives.
+## ⚙️ Configuration
+
+Settings can be customized in `config.py`:
+
+- `SAMPLE_RATE`: Audio sample rate (default: 16000)
+- `WHISPER_MODEL`: Whisper model size (default: "medium")
+- `LLM_URL`: Local LLM server URL
+- `DEFAULT_THEME`: Terminal theme ("light" or "dark")
+
+You can also set environment variables:
+- `WHISPER_MODEL`: Override Whisper model
+- `LLM_URL`: Override LLM server URL
+## 🧪 Testing
+
+Run unit tests:
+
+```bash
+python -m unittest test_pers_assist.py
+```
 
 ## 📄 License
 
