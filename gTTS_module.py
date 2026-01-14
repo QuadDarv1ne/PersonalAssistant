@@ -2,7 +2,7 @@ import io, os, contextlib
 from gtts import gTTS
 # Подавить вывод
 with open(os.devnull, 'w') as devnull, contextlib.redirect_stdout(devnull), contextlib.redirect_stderr(devnull):
-    import pygame
+    from playsound import playsound
 from threading import Thread
 import keyboard  # Для отслеживания клавиш
 

@@ -1,4 +1,3 @@
-
 # 🎙️ Voice Assistant with Real-Time Speech Recognition and Response
 
 This is a real-time voice assistant built in Python using [OpenAI Whisper](https://github.com/openai/whisper), [WebRTC Voice Activity Detection (VAD)](https://github.com/wiseman/py-webrtcvad), and a local LLM server for generating responses. The assistant listens for speech when you press the spacebar, transcribes it using Whisper, sends the transcribed text to a chatbot endpoint, and optionally speaks the response aloud using gTTS.

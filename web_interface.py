@@ -15,12 +15,18 @@ def get_history():
     """Получить историю разговоров"""
     return jsonify(conversation_history.history.history[-10:])  # Последние 10 записей
 
-@app.route('/api/clear_history', methods=['POST'])
-def clear_history():
-    """Очистить историю"""
-    conversation_history.history.history.clear()
-    conversation_history.history.save_history()
-    return jsonify({'status': 'success'})
+@app.route('/api/send_message', methods=['POST'])
+def send_message():
+    """Отправить текстовое сообщение и получить ответ"""
+    data = request.json
+    user_text = data.get('message', '').strip()
+    if not user_text:
+        return jsonify({'error': 'Сообщение не может быть пустым'}), 400
+    
+    # Импортировать функцию генерации ответа
+    import pers_assist
+    response = pers_assist.generate_response(user_text)
+    return jsonify({'response': response})
 
 def run_web_interface(port: int = 5000):
     """Запустить веб-интерфейс в отдельном потоке"""

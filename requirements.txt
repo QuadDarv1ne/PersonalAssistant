@@ -7,5 +7,5 @@ webrtcvad
 requests
 colorama
 gtts
-pygame
+playsound
 flask

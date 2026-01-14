@@ -15,6 +15,7 @@ import config
 import logger
 import conversation_history
 import web_interface
+import os
 
 
 # Инициализация colorama для цветного вывода в терминал
@@ -83,12 +84,21 @@ def callback(indata: np.ndarray, frames: int, time: Any, status: Any) -> None:
 # --- Управление записью аудио ---
 def record_audio():
     global recording
-    logger.log_with_color('INFO', "Нажмите Пробел для начала записи...", logger.Colors.CYAN)
+    logger.log_with_color('INFO', "Нажмите Пробел для начала записи, Q для выхода, C для очистки истории...", logger.Colors.CYAN)
     with sd.InputStream(samplerate=SAMPLE_RATE, channels=CHANNELS, dtype=DTYPE, callback=callback):
         while True:
             if keyboard.is_pressed('space'):
                 toggle_recording()
                 while keyboard.is_pressed('space'):
+                    pass
+            elif keyboard.is_pressed('q'):
+                logger.log_with_color('INFO', "Выход по команде пользователя.", logger.Colors.YELLOW)
+                os._exit(0)  # Принудительный выход
+            elif keyboard.is_pressed('c'):
+                conversation_history.history.history.clear()
+                conversation_history.history.save_history()
+                logger.log_with_color('INFO', "История очищена.", logger.Colors.GREEN)
+                while keyboard.is_pressed('c'):
                     pass
             time.sleep(0.1)
 
