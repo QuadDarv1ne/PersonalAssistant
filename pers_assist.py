@@ -11,6 +11,7 @@ from colorama import Fore, Style, init
 import re
 import gTTS_module
 from typing import List, Dict, Any, Optional
+import config
 
 
 # Initialize colorama for terminal colors
