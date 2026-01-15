@@ -1,8 +1,5 @@
-import io, os, contextlib
+import io, os, contextlib, subprocess
 from gtts import gTTS
-# Подавить вывод
-with open(os.devnull, 'w') as devnull, contextlib.redirect_stdout(devnull), contextlib.redirect_stderr(devnull):
-    from playsound import playsound
 from threading import Thread
 import keyboard  # Для отслеживания клавиш
 
@@ -24,16 +21,19 @@ def text_to_speech(text: str, lang: str = 'en'):
         filename = 'temp_audio.mp3'
         tts.save(filename)
 
-        # Воспроизвести файл
+        # Воспроизвести файл с помощью системного плеера
         _playing = True
-        playsound(filename, block=False)
+        subprocess.Popen(['start', filename], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-        # Ждать завершения или остановки
-        while _playing:
+        # Ждать завершения или остановки (примерно)
+        import time
+        for _ in range(100):  # Максимум 10 секунд
+            if not _playing:
+                break
             if keyboard.is_pressed('esc'):
                 stop_sound()
                 break
-            Thread(target=lambda: None, daemon=True).join(0.1)  # Небольшая задержка
+            time.sleep(0.1)
 
         # Удалить файл после воспроизведения
         if os.path.exists(filename):
@@ -86,7 +86,6 @@ def stop_sound():
     """Останавливает текущее воспроизведение"""
     global _playing
     if _playing:
-        pygame.mixer.music.stop()
         _playing = False
         print("Воспроизведение остановлено")
 

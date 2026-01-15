@@ -237,6 +237,13 @@ def process_stream():
 
 # --- Точка входа ---
 if __name__ == "__main__":
+    try:
+        config.validate_config()
+        logger.log_with_color('INFO', "[Конфигурация валидна.]", logger.Colors.GREEN)
+    except ValueError as e:
+        logger.log_with_color('ERROR', f"Ошибка конфигурации: {e}")
+        exit(1)
+    
     logger.log_with_color('INFO', "[Приложение голосового ассистента запущено.]", logger.Colors.GREEN)
 
     # Запустить веб-интерфейс

@@ -6,7 +6,11 @@ import os
 # Добавить директорию проекта в путь
 sys.path.insert(0, os.path.dirname(__file__))
 
+# Mock webrtcvad
+sys.modules['webrtcvad'] = MagicMock()
+
 import pers_assist
+import config
 
 class TestPersonalAssistant(unittest.TestCase):
 
@@ -26,10 +30,27 @@ class TestPersonalAssistant(unittest.TestCase):
             self.assertIn("Извините", result)
 
     def test_is_speech(self):
+        # Mock vad
+        pers_assist.vad = MagicMock()
+        pers_assist.vad.is_speech.return_value = True
         # Тест с валидным фреймом
         frame = b'\x00\x01' * 160  # 320 байт для 20мс при 16кГц
         result = pers_assist.is_speech(frame)
-        self.assertIsInstance(result, bool)
+        self.assertTrue(result)
+
+    def test_validate_config_valid(self):
+        # Тест валидной конфигурации
+        result = config.validate_config()
+        self.assertTrue(result)
+
+    def test_validate_config_invalid_model(self):
+        # Тест невалидной модели
+        original_model = config.WHISPER_MODEL
+        config.WHISPER_MODEL = 'invalid_model'
+        with self.assertRaises(ValueError) as context:
+            config.validate_config()
+        self.assertIn("Неподдерживаемая модель Whisper", str(context.exception))
+        config.WHISPER_MODEL = original_model
 
 if __name__ == '__main__':
     unittest.main()

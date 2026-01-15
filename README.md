@@ -12,10 +12,13 @@ This is a real-time voice assistant built in Python using [OpenAI Whisper](https
 - Terminal theming (light/dark)
 - Multithreaded design for responsive interaction
 - **Conversation history** with context awareness
-- **Web interface** for monitoring conversations
+- **Web interface** for monitoring conversations and sending text messages
+- **Settings page** in web interface for configuration
 - **Multi-language support** for Whisper and TTS
 - **Comprehensive logging** system
 - **Configurable settings** via environment variables
+- **Hotkeys** for control (Q to quit, C to clear history)
+- **Configuration validation** on startup
 
 ## 📦 Dependencies
 
@@ -47,7 +50,13 @@ pip install numpy sounddevice keyboard openai-whisper torch webrtcvad requests c
 
 4. The assistant **prints the response** in the terminal and **speaks it aloud**.
 
-5. **Web interface** is available at `http://localhost:5000` for viewing conversation history.
+5. **Web interface** is available at `http://localhost:5000` for viewing conversation history, sending text messages, and adjusting settings.
+
+6. **Hotkeys**:
+   - `Space`: Toggle recording
+   - `Q`: Quit the application
+   - `C`: Clear conversation history
+   - `Esc`: Stop TTS playback
 
 ## 📡 LLM Chatbot Backend
 

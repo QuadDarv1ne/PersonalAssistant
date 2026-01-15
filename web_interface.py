@@ -5,28 +5,23 @@ import conversation_history
 
 app = Flask(__name__)
 
-@app.route('/')
-def index():
-    """Главная страница с интерфейсом"""
-    return render_template('index.html')
+@app.route('/settings')
+def settings():
+    """Страница настроек"""
+    return render_template('settings.html')
 
 @app.route('/api/history', methods=['GET'])
 def get_history():
     """Получить историю разговоров"""
     return jsonify(conversation_history.history.history[-10:])  # Последние 10 записей
 
-@app.route('/api/send_message', methods=['POST'])
-def send_message():
-    """Отправить текстовое сообщение и получить ответ"""
+@app.route('/api/settings', methods=['POST'])
+def save_settings():
+    """Сохранение настроек"""
     data = request.json
-    user_text = data.get('message', '').strip()
-    if not user_text:
-        return jsonify({'error': 'Сообщение не может быть пустым'}), 400
-    
-    # Импортировать функцию генерации ответа
-    import pers_assist
-    response = pers_assist.generate_response(user_text)
-    return jsonify({'response': response})
+    # В будущем можно сохранить в файл или переменные окружения
+    # Пока просто возвращаем успех
+    return jsonify({'status': 'success'})
 
 def run_web_interface(port: int = 5000):
     """Запустить веб-интерфейс в отдельном потоке"""

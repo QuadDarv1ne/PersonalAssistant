@@ -22,3 +22,24 @@ DEFAULT_THEME = 'light'
 # Язык для Whisper и TTS
 LANGUAGE = os.getenv('LANGUAGE', 'en')  # 'en', 'ru', etc.
 TTS_LANGUAGE = os.getenv('TTS_LANGUAGE', 'en')
+
+def validate_config():
+    """Валидация конфигурации"""
+    errors = []
+    
+    if SAMPLE_RATE not in [8000, 16000, 22050, 44100]:
+        errors.append(f"Неподдерживаемая частота дискретизации: {SAMPLE_RATE}")
+    
+    if CHANNELS not in [1, 2]:
+        errors.append(f"Неподдерживаемое количество каналов: {CHANNELS}")
+    
+    if WHISPER_MODEL not in ['tiny.en', 'tiny', 'base.en', 'base', 'small.en', 'small', 'medium.en', 'medium', 'large-v1', 'large-v2', 'large-v3', 'large', 'large-v3-turbo', 'turbo']:
+        errors.append(f"Неподдерживаемая модель Whisper: {WHISPER_MODEL}")
+    
+    if DEFAULT_THEME not in ['light', 'dark']:
+        errors.append(f"Неподдерживаемая тема: {DEFAULT_THEME}")
+    
+    if errors:
+        raise ValueError("Ошибки конфигурации:\n" + "\n".join(errors))
+    
+    return True
